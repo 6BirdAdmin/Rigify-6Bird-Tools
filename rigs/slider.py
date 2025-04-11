@@ -22,7 +22,7 @@ from mathutils import Matrix, Vector
 from rigify.base_rig import stage, BaseRig
 from rigify.utils.rig import connected_children_names
 from rigify.utils.misc import map_list
-from rigify.utils.bones import put_bone, copy_bone_properties, align_bone_orientation, set_bone_widget_transform, get_bone
+from rigify.utils.bones import put_bone, copy_bone_properties, align_bone_orientation, set_bone_widget_transform
 from rigify.utils.naming import make_derived_name
 from rigify.utils.widgets_basic import create_bone_widget, create_line_widget
 from rigify.utils.widgets import adjust_widget_transform_mesh
@@ -48,23 +48,29 @@ class Rig(BaseRig):
     @stage.parent_bones
     def parent_controls(self):
         self.set_bone_parent(self.bones.org[1], self.bones.org[0])
+        self.set_bone_parent(self.bones.ctrl[1], self.bones.ctrl[0])
 
     @stage.configure_bones
     def configure_controls(self):
+        arm = self.obj
+        pb1 = arm.pose.bones[self.bones.ctrl[0]]
+        bone1_length = pb1.bone.length
         for args in zip(count(0), self.bones.ctrl, self.bones.org):
             self.configure_control_bone(*args)
         self.make_constraint(self.bones.ctrl[1], 'LIMIT_LOCATION', space_object= self.obj, \
-            space_subtarget= self.bones.ctrl[0], owner_space ='CUSTOM', use_transform_limit=True, \
-                max_y=get_bone(self.obj, self.bones.ctrl[0]).length, use_max_x=True, use_max_y=True, \
+            space_subtarget= self.bones.ctrl[0], owner_space ='LOCAL', use_transform_limit=True, \
+                max_y=bone1_length, use_max_x=True, use_max_y=True, \
                     use_max_z=True, use_min_x=True, use_min_y=True, use_min_z=True)
 
     def configure_control_bone(self, i, ctrl, org):
         self.copy_bone_properties(org, ctrl)
 
     @stage.rig_bones
+    def rig_bones(self):
+        self.add_slider_value()
+        self.lock_bones()
 
     def add_slider_value(self):
-
         #Not gonna lie I got AI to figure this out, idk how it works
         bone1_name = self.bones.ctrl[0]
         bone2_name = self.bones.ctrl[1]
@@ -74,6 +80,7 @@ class Rig(BaseRig):
         arm = self.obj
         pb1 = arm.pose.bones[bone1_name]
         pb2 = arm.pose.bones[bone2_name]
+        bone1_length = pb1.bone.length
 
         # Add the custom property to bone_1
         pb1[custom_prop_name] = 0.0
@@ -96,12 +103,23 @@ class Rig(BaseRig):
                 target.transform_type = f"LOC_{axis}"
                 target.transform_space = 'WORLD_SPACE'
 
-        # Driver expression: distance formula (no scaling involved)
         driver.expression = (
-            "sqrt((a_X - b_X)**2 + (a_Y - b_Y)**2 + (a_Z - b_Z)**2)"
+            f"min(sqrt((a_X - b_X)**2 + (a_Y - b_Y)**2 + (a_Z - b_Z)**2) / {bone1_length:.6f}, 1.0)"
         )
-        
     
+    def lock_bones(self):
+        arm = self.obj
+        pb1 = arm.pose.bones[self.bones.ctrl[0]]
+        pb2 = arm.pose.bones[self.bones.ctrl[1]]
+        pb1.lock_rotations_4d = True
+        pb2.lock_rotations_4d = True
+        pb1.lock_rotation_w = True
+        pb2.lock_rotation_w = True
+        pb1.lock_rotation = [True, True, True]
+        pb2.lock_rotation = [True, True, True]
+        pb1.lock_scale = [True, True, True]
+        pb2.lock_scale = [True, True, True]
+        pb1.lock_location = [True, True, True]
 
     @stage.generate_widgets
     def make_control_widgets(self):
