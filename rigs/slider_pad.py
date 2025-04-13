@@ -34,6 +34,11 @@ class Rig(BaseRig):
     def find_org_bones(self, bone):
         return [bone.name] + connected_children_names(self.obj, bone.name)
 
+        value_scale: float
+
+    def initialize(self):
+        self.value_scale = self.params.value_scale
+
     @stage.generate_bones
 
     def make_control_bones(self):
@@ -65,6 +70,22 @@ class Rig(BaseRig):
 
     def configure_control_bone(self, i, ctrl, org):
         self.copy_bone_properties(org, ctrl)
+
+    ##############################
+    # UI
+
+    @classmethod
+    def add_parameters(cls, params):
+        params.value_scale = bpy.props.FloatProperty(
+            name="Value Scale",
+            default=1,
+            description="Multiplies the range by integer value."
+        )
+
+    @classmethod
+    def parameters_ui(cls, layout, params):
+        layout.row().prop(params, "value_scale", text="Scale Output")
+
 
     @stage.rig_bones
     def setup_bones(self):
@@ -118,13 +139,13 @@ class Rig(BaseRig):
                 target.transform_space = 'WORLD_SPACE'
 
         driver_x.expression = (
-            f"min((b_X - a_X) / {bone1_length:.6f}, 1.0)"
+            f"{self.value_scale:.6f} * min((b_X - a_X) / {bone1_length:.6f}, 1.0)"
         )
         # driver_y.expression = (
         #     f"min((a_Y - b_Y) / {bone1_length:.6f}, 1.0)"
         # )
         driver_z.expression = (
-            f"min((b_Z - a_Z) / {bone1_length:.6f}, 1.0)"
+            f"{self.value_scale:.6f} * min((b_Z - a_Z) / {bone1_length:.6f}, 1.0)"
         )
     
     def lock_bones(self):
