@@ -152,5 +152,5 @@ class Rig(BaseRig):
         slider = create_circle_widget(self.obj, ctrl[1])
         transform_box = Matrix.Translation((0.0, bone1_length/2, 0.0)) @ Matrix.Scale(0.001, 4, Vector((0, 0, 1))) @ Matrix.Scale(1.2, 4, Vector((0, 1, 0))) @ Matrix.Scale(0.2, 4, Vector((1, 0, 0)))
         transform_slider =  Matrix.Rotation(math.radians(90), 4, 'X') @ Matrix.Scale(0.1, 4, Vector((1, 0, 0))) @ Matrix.Scale(0.1, 4, Vector((0, 0, 1)))
-        adjust_widget_transform_mesh(box, transform_box, local=True)
+        adjust_widget_transform_mesh(box, transform_box, local=self.obj.pose.bones[ctrl[0]])
         adjust_widget_transform_mesh(slider, transform_slider, local=True)
