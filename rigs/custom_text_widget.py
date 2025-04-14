@@ -32,11 +32,18 @@ class Rig(BaseRig):
     def find_org_bones(self, bone):
         return [bone.name] + connected_children_names(self.obj, bone.name)
 
-        mesh_shape: str
+        text_input: str
+        text_align_x: str
+        text_align_y: str
+        text_size: float
+        text_extrude: float
 
     def initialize(self):
-        self.mesh_shape = self.params.mesh_shape
-
+        self.text_input = self.params.text_input
+        self.text_align_x = self.params.text_align_x
+        self.text_align_y = self.params.text_align_y
+        self.text_size = self.params.text_size
+        self.text_extrude = self.params.text_extrude
 
     @stage.generate_bones
     def make_control_bones(self):
@@ -51,15 +58,53 @@ class Rig(BaseRig):
 
     @classmethod
     def add_parameters(cls, params):
-        params.mesh_shape = bpy.props.StringProperty(
+        params.text_input = bpy.props.StringProperty(
             name="Widget String",
             default='',
             description="Text to transform into widget."
         )
+        params.text_align_x = bpy.props.EnumProperty(
+            name="Align X",
+            description="Select one of the options",
+            items=[
+                ('LEFT', 'Left', ''),
+                ('CENTER', 'Center', ''),
+                ('RIGHT', 'Right', ''),
+                ('JUSTIFY', 'Justify', ''),
+                ('FLUSH', 'Flush', ''),
+            ],
+            default='CENTER'
+        )
+        params.text_align_y = bpy.props.EnumProperty(
+            name="Align Y",
+            description="Select one of the options",
+            items=[
+                ('TOP', 'Top', ''),
+                ('TOP_BASELINE', 'Top Baseline', ''),
+                ('CENTER', 'Center', ''),
+                ('BOTTOM_BASELINE', 'Bottom Baseline', ''),
+                ('BOTTOM', 'Bottom', ''),
+            ],
+            default='CENTER'
+        )
+        params.text_size = bpy.props.FloatProperty(
+            name="Text Size",
+            default=1.0,
+            description="Float Value."
+        )
+        params.text_extrude = bpy.props.FloatProperty(
+            name="Extrude",
+            default=0.0,
+            description="Float Value."
+        )
 
     @classmethod
     def parameters_ui(cls, layout, params):
-        layout.row().prop(params, "mesh_shape", text="Text")
+        layout.row().prop(params, "text_input", text="Text")
+        layout.row().prop(params, "text_size", text="Text Size")
+        layout.row().prop(params, "text_extrude", text="Extrude")
+        layout.row().prop(params, "text_align_x", text="Align X")
+        layout.row().prop(params, "text_align_y", text="Align Y")
 
     @stage.generate_widgets
     def make_control_widgets(self):
@@ -75,7 +120,11 @@ class Rig(BaseRig):
         custom_shape.name = text_obj_name
         custom_shape.data.name = text_obj_name
         bpy.context.view_layer.objects.active = self.obj
-        custom_shape.data.body = self.mesh_shape or "Text"
+        custom_shape.data.body = self.text_input or "Text"
+        custom_shape.data.size = self.text_size
+        custom_shape.data.extrude = self.text_extrude
+        custom_shape.data.align_x = self.text_align_x
+        custom_shape.data.align_y = self.text_align_y
         bpy.ops.object.convert(target='MESH')
         self.make_custom_widget(self.bones.ctrl[0], custom_shape)
 
@@ -87,6 +136,6 @@ class Rig(BaseRig):
                 collection.objects.unlink(custom_shape)
             generator = BaseGenerator.instance
             collection = generator.widget_collection
-            generator.new_widget_table[self.mesh_shape] = custom_shape
+            generator.new_widget_table[self.text_input] = custom_shape
             collection.objects.link(custom_shape)
             return widget

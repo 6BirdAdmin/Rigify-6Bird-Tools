@@ -144,9 +144,16 @@ class Rig(BaseRig):
 
     @stage.generate_widgets
     def make_control_widgets(self):
+        # ctrl = self.bones.ctrl
+        # line = create_line_widget(self.obj, ctrl[0])
+        # slider = create_bone_widget(self.obj, ctrl[1])
+        # transform = Matrix.Scale(0.025, 4, Vector((0.0, 1.0, 0.0)))
+        # adjust_widget_transform_mesh(slider, transform, local=True)
+
         ctrl = self.bones.ctrl
-        line = create_line_widget(self.obj, ctrl[0])
-        slider = create_bone_widget(self.obj, ctrl[1])
-        transform = Matrix.Scale(0.025, 4, Vector((0.0, 1.0, 0.0)))
-        adjust_widget_transform_mesh(slider, transform, local=True)
-        
+        box = create_cube_widget(self.obj, ctrl[0])
+        slider = create_circle_widget(self.obj, ctrl[1])
+        transform_box = Matrix.Scale(0.001, 4, Vector((0, 0, 1))) @ Matrix.Scale(2.2, 4, Vector((0, 1, 0))) @ Matrix.Scale(0.2, 4, Vector((1, 0, 0)))
+        transform_slider =  Matrix.Rotation(math.radians(90), 4, 'X') @ Matrix.Scale(0.1, 4, Vector((1, 0, 0))) @ Matrix.Scale(0.1, 4, Vector((0, 0, 1)))
+        adjust_widget_transform_mesh(box, transform_box, local=True)
+        adjust_widget_transform_mesh(slider, transform_slider, local=True)
