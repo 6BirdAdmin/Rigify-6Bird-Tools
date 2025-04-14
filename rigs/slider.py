@@ -17,6 +17,7 @@
 # ======================= END GPL LICENSE BLOCK ========================
 
 import bpy
+import math
 from itertools import count
 from mathutils import Matrix, Vector
 from rigify.base_rig import stage, BaseRig
@@ -24,7 +25,7 @@ from rigify.utils.rig import connected_children_names
 from rigify.utils.misc import map_list
 from rigify.utils.bones import put_bone, copy_bone_properties, align_bone_orientation, set_bone_widget_transform
 from rigify.utils.naming import make_derived_name
-from rigify.utils.widgets_basic import create_bone_widget, create_line_widget
+from rigify.utils.widgets_basic import create_circle_widget, create_cube_widget
 from rigify.utils.widgets import adjust_widget_transform_mesh
 
 class Rig(BaseRig):
@@ -103,11 +104,11 @@ class Rig(BaseRig):
         pb2 = arm.pose.bones[bone2_name]
         bone1_length = pb1.bone.length
 
-        # Add the custom property to bone_1
-        pb1[custom_prop_name] = 0.0
+        # Add the custom property to slider
+        pb2[custom_prop_name] = 0.0
 
         # Create driver for the custom property
-        prop_path = f'pose.bones["{bone1_name}"]["{custom_prop_name}"]'
+        prop_path = f'pose.bones["{bone2_name}"]["{custom_prop_name}"]'
         fcurve = arm.driver_add(prop_path)
         driver = fcurve.driver
         driver.type = 'SCRIPTED'
@@ -122,7 +123,7 @@ class Rig(BaseRig):
                 target.id = arm
                 target.bone_target = bone
                 target.transform_type = f"LOC_{axis}"
-                target.transform_space = 'WORLD_SPACE'
+                target.transform_space = 'LOCAL_SPACE'
 
         driver.expression = (
             f"{self.value_scale:.6f} * min(sqrt((a_X - b_X)**2 + (a_Y - b_Y)**2 + (a_Z - b_Z)**2) / {bone1_length:.6f}, 1.0)"
@@ -141,19 +142,15 @@ class Rig(BaseRig):
         pb1.lock_scale = [True, True, True]
         pb2.lock_scale = [True, True, True]
         pb1.lock_location = [True, True, True]
+        arm.data.bones[self.bones.ctrl[0]].hide_select = True
 
     @stage.generate_widgets
     def make_control_widgets(self):
-        # ctrl = self.bones.ctrl
-        # line = create_line_widget(self.obj, ctrl[0])
-        # slider = create_bone_widget(self.obj, ctrl[1])
-        # transform = Matrix.Scale(0.025, 4, Vector((0.0, 1.0, 0.0)))
-        # adjust_widget_transform_mesh(slider, transform, local=True)
-
         ctrl = self.bones.ctrl
+        bone1_length = self.obj.pose.bones[ctrl[0]].length
         box = create_cube_widget(self.obj, ctrl[0])
         slider = create_circle_widget(self.obj, ctrl[1])
-        transform_box = Matrix.Scale(0.001, 4, Vector((0, 0, 1))) @ Matrix.Scale(2.2, 4, Vector((0, 1, 0))) @ Matrix.Scale(0.2, 4, Vector((1, 0, 0)))
+        transform_box = Matrix.Translation((0.0, bone1_length/2, 0.0)) @ Matrix.Scale(0.001, 4, Vector((0, 0, 1))) @ Matrix.Scale(1.2, 4, Vector((0, 1, 0))) @ Matrix.Scale(0.2, 4, Vector((1, 0, 0)))
         transform_slider =  Matrix.Rotation(math.radians(90), 4, 'X') @ Matrix.Scale(0.1, 4, Vector((1, 0, 0))) @ Matrix.Scale(0.1, 4, Vector((0, 0, 1)))
         adjust_widget_transform_mesh(box, transform_box, local=True)
         adjust_widget_transform_mesh(slider, transform_slider, local=True)

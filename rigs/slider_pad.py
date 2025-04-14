@@ -97,8 +97,7 @@ class Rig(BaseRig):
         bone1_name = self.bones.ctrl[0]
         bone2_name = self.bones.ctrl[1]
         custom_prop_name_x = "bone_distance_x"
-        #custom_prop_name_y = "bone_distance_y"
-        custom_prop_name_z = "bone_distance_z"
+        custom_prop_name_y = "bone_distance_y"
 
         # Get objects and pose bones
         arm = self.obj
@@ -106,29 +105,24 @@ class Rig(BaseRig):
         pb2 = arm.pose.bones[bone2_name]
         bone1_length = pb1.bone.length
 
-        # Add the custom property to bone_1
-        pb1[custom_prop_name_x] = 0.0
-        #pb1[custom_prop_name_y] = 0.0
-        pb1[custom_prop_name_z] = 0.0
+        # Add the custom property to slider
+        pb2[custom_prop_name_x] = 0.0
+        pb2[custom_prop_name_y] = 0.0
 
         # Create driver for the custom property
-        prop_path_x = f'pose.bones["{bone1_name}"]["{custom_prop_name_x}"]'
-        #prop_path_y = f'pose.bones["{bone1_name}"]["{custom_prop_name_y}"]'
-        prop_path_z = f'pose.bones["{bone1_name}"]["{custom_prop_name_z}"]'
+        prop_path_x = f'pose.bones["{bone2_name}"]["{custom_prop_name_x}"]'
+        prop_path_y = f'pose.bones["{bone2_name}"]["{custom_prop_name_y}"]'
         fcurve_x = arm.driver_add(prop_path_x)
-        #fcurve_y = arm.driver_add(prop_path_y)
-        fcurve_z = arm.driver_add(prop_path_z)
+        fcurve_y = arm.driver_add(prop_path_y)
         driver_x = fcurve_x.driver
-        #driver_y = fcurve_y.driver
-        driver_z = fcurve_z.driver
+        driver_y = fcurve_y.driver
         driver_x.type = 'SCRIPTED'
-        #driver_y.type = 'SCRIPTED'
-        driver_z.type = 'SCRIPTED'
+        driver_y.type = 'SCRIPTED'
 
 
         # Add variables for bone_1 and bone_2 world locations
         for bone, prefix in [(bone1_name, "a"), (bone2_name, "b")]:
-            for axis, driver in zip("XZ", [driver_x, driver_z]):
+            for axis, driver in zip("XY", [driver_x, driver_y]):
                 var = driver.variables.new()
                 var.name = f"{prefix}_{axis}"
                 var.type = 'TRANSFORMS'
@@ -136,16 +130,13 @@ class Rig(BaseRig):
                 target.id = arm
                 target.bone_target = bone
                 target.transform_type = f"LOC_{axis}"
-                target.transform_space = 'WORLD_SPACE'
+                target.transform_space = 'LOCAL_SPACE'
 
         driver_x.expression = (
             f"{self.value_scale:.6f} * min((b_X - a_X) / {bone1_length:.6f}, 1.0)"
         )
-        # driver_y.expression = (
-        #     f"min((a_Y - b_Y) / {bone1_length:.6f}, 1.0)"
-        # )
-        driver_z.expression = (
-            f"{self.value_scale:.6f} * min((b_Z - a_Z) / {bone1_length:.6f}, 1.0)"
+        driver_y.expression = (
+            f"{self.value_scale:.6f} * min((b_Y - a_Y) / {bone1_length:.6f}, 1.0)"
         )
     
     def lock_bones(self):
@@ -161,6 +152,7 @@ class Rig(BaseRig):
         pb1.lock_scale = [True, True, True]
         pb2.lock_scale = [True, True, True]
         pb1.lock_location = [True, True, True]
+        arm.data.bones[self.bones.ctrl[0]].hide_select = True
 
     @stage.generate_widgets
     def make_control_widgets(self):
